@@ -1,16 +1,20 @@
 package com.bingosrs;
 
+import com.bingosrs.api.BingOSRSService;
+import com.bingosrs.notifiers.LootNotifier;
 import com.google.inject.Provides;
 import javax.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.ChatMessageType;
-import net.runelite.api.Client;
 import net.runelite.api.GameState;
-import net.runelite.api.events.GameStateChanged;
+import net.runelite.api.events.*;
+import net.runelite.api.gameval.NpcID;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.*;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.plugins.loottracker.LootReceived;
+import java.util.concurrent.atomic.AtomicReference;
 
 @Slf4j
 @PluginDescriptor(
@@ -19,35 +23,78 @@ import net.runelite.client.plugins.PluginDescriptor;
 public class BingOSRSPlugin extends Plugin
 {
 	@Inject
-	private Client client;
+	private BingoInfoManager bingoInfoManager;
 
 	@Inject
-	private BingOSRSConfig config;
+	private BingOSRSService bingOSRSService;
+
+	@Inject
+	private LootNotifier lootNotifier;
+
+	private final AtomicReference<GameState> gameState = new AtomicReference<>();
 
 	@Override
-	protected void startUp() throws Exception
-	{
-		log.info("Example started!");
+	protected void startUp() {
+		log.debug("Started up BingOSRS");
 	}
 
 	@Override
-	protected void shutDown() throws Exception
-	{
-		log.info("Example stopped!");
-	}
-
-	@Subscribe
-	public void onGameStateChanged(GameStateChanged gameStateChanged)
-	{
-		if (gameStateChanged.getGameState() == GameState.LOGGED_IN)
-		{
-			client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", "Example says " + config.greeting(), null);
-		}
+	protected void shutDown() {
+		log.debug("Shutting down BingOSRS");
+		gameState.lazySet(null);
 	}
 
 	@Provides
-	BingOSRSConfig provideConfig(ConfigManager configManager)
-	{
+	BingOSRSConfig provideConfig(ConfigManager configManager) {
 		return configManager.getConfig(BingOSRSConfig.class);
+	}
+
+	@Subscribe
+	public void onConfigChanged(ConfigChanged event) {
+		if (!BingoInfoManager.CONFIG_GROUP.equals(event.getGroup())) {
+			return;
+		}
+
+        bingOSRSService.triggerAuth(event.getKey().equals("playerToken"));
+		bingoInfoManager.onConfigChanged(event);
+	}
+
+	@Subscribe
+	public void onGameStateChanged(GameStateChanged gameStateChanged) {
+		GameState newState = gameStateChanged.getGameState();
+		if (newState == GameState.LOGGED_IN) {
+			bingOSRSService.triggerAuth();
+			bingoInfoManager.onGameStateChanged(gameStateChanged);
+		}
+	}
+
+	@Subscribe
+	public void onGameTick(GameTick event) {
+		bingoInfoManager.onGameTick(event);
+		bingOSRSService.onGameTick(event);
+	}
+
+	@Subscribe(priority = 1) // run before the base loot tracker plugin
+	public void onServerNpcLoot(ServerNpcLoot event) {
+		// temporarily only use new event when needed
+		if (event.getComposition().getId() != NpcID.YAMA) {
+			return;
+		}
+		lootNotifier.onServerNpcLoot(event);
+	}
+
+	@Subscribe(priority = 1) // run before the base loot tracker plugin
+	public void onNpcLootReceived(NpcLootReceived npcLootReceived) {
+		if (npcLootReceived.getNpc().getId() == NpcID.YAMA) {
+			// handled by ServerNpcLoot, but return just in case
+			return;
+		}
+
+		lootNotifier.onNpcLootReceived(npcLootReceived);
+	}
+
+	@Subscribe
+	public void onLootReceived(LootReceived lootReceived) {
+		lootNotifier.onLootReceived(lootReceived);
 	}
 }

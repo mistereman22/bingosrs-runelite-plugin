@@ -4,16 +4,27 @@ import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigGroup;
 import net.runelite.client.config.ConfigItem;
 
-@ConfigGroup("example")
+@ConfigGroup("bingosrs")
 public interface BingOSRSConfig extends Config
 {
 	@ConfigItem(
-		keyName = "greeting",
-		name = "Welcome Greeting",
-		description = "The message to show to the user when they login"
+		keyName = "bingoId",
+		name = "Bingo ID",
+		description = "ID of the bingo "
 	)
-	default String greeting()
+	default String bingoId()
 	{
-		return "Hello";
+		return "";
+	}
+
+	@ConfigItem(
+			keyName = "playerToken",
+			name = "Player Token",
+			description = "Player token for the bingo. Required to submit drops.",
+			secret = true
+	)
+	default String playerToken()
+	{
+		return "";
 	}
 }
