@@ -55,16 +55,9 @@ public class BingOSRSPlugin extends Plugin
 			return;
 		}
 
-        bingOSRSService.triggerAuth(event.getKey().equals("playerToken"));
-		bingoInfoManager.onConfigChanged(event);
-	}
-
-	@Subscribe
-	public void onGameStateChanged(GameStateChanged gameStateChanged) {
-		GameState newState = gameStateChanged.getGameState();
-		if (newState == GameState.LOGGED_IN) {
-			bingOSRSService.triggerAuth();
-			bingoInfoManager.onGameStateChanged(gameStateChanged);
+        bingOSRSService.triggerAuth();
+		if (event.getKey().equals("bingoId")) {
+			bingoInfoManager.triggerUpdateRequiredDrops();
 		}
 	}
 

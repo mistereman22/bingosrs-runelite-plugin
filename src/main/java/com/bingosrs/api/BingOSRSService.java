@@ -31,7 +31,8 @@ public class BingOSRSService {
     private BingOSRSConfig config;
 
 
-    private boolean shouldFetchAuth = false;
+    // Default to true so this pulls on first game tick
+    private boolean shouldFetchAuth = true;
     private String accessToken;
 
     private String request(Request request) throws Exception {
@@ -42,7 +43,7 @@ public class BingOSRSService {
         try {
             response = call.execute();
             if (!response.isSuccessful()) {
-                throw new IOException("Request failed with code: " + response.code() + " message: " + response.message()); // Throw an IOException with the error code and message
+                throw new IOException("Request failed with code: " + response.code() + " message: " + response.message());
             }
             ResponseBody body = response.body();
             if (body != null) {
@@ -63,20 +64,15 @@ public class BingOSRSService {
     public void onGameTick(GameTick gameTick) {
         if (this.shouldFetchAuth) {
             this.shouldFetchAuth = false;
+            if (config.bingoId().isBlank() || config.playerToken().isBlank()) {
+                return;
+            }
             this.fetchAuthTokenAsync();
         }
     }
 
     public void triggerAuth() {
-        this.triggerAuth(false);
-    }
-
-    public void triggerAuth(boolean force) {
-        // Don't refetch auth token unless it's empty or forcing
-        // This prevents unnecessary retriggers, and covers use case for modifying token before bingo ID
-        if (this.accessToken == null || force) {
-            this.shouldFetchAuth = true;
-        }
+        this.shouldFetchAuth = true;
     }
 
     private CompletableFuture<Void> fetchAuthTokenAsync() {

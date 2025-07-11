@@ -28,24 +28,9 @@ public class BingoInfoManager {
     @Inject
     private BingOSRSService bingOSRSService;
 
-    // prevent overlapping calls
-    private boolean shouldUpdateRequiredDrops = false;
+    // Default to true so this pulls on first game tick
+    private boolean shouldUpdateRequiredDrops = true;
     private List<RequiredDrop> requiredDrops = new ArrayList<>();
-
-    void onConfigChanged(ConfigChanged event) {
-        if (client.getGameState() == GameState.LOGGED_IN) {
-            if (event.getKey().equals("bingoId") && !config.bingoId().isBlank() && !config.playerToken().isBlank()) {
-                this.updateRequiredDrops();
-            }
-        }
-    }
-
-    public void onGameStateChanged(GameStateChanged gameStateChanged) {
-        GameState newState = gameStateChanged.getGameState();
-        if (newState == GameState.LOGGED_IN) {
-            this.shouldUpdateRequiredDrops = true;
-        }
-    }
 
     public void onGameTick(GameTick gameTick) {
         if (this.shouldUpdateRequiredDrops) {
@@ -59,6 +44,9 @@ public class BingoInfoManager {
     }
 
     private void updateRequiredDrops() {
+        if (config.bingoId().isBlank()) {
+            return;
+        }
         bingOSRSService.fetchTeamsAsync()
                 .thenAccept(teams -> {
                     List<RequiredDrop> requiredDrops = new ArrayList<>();
