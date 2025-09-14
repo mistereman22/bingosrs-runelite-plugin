@@ -101,9 +101,10 @@ public class BingOSRSPanel extends PluginPanel {
                 }
 
                 JPanel headerPanel = new JPanel();
-                headerPanel.setLayout(new FlowLayout(FlowLayout.LEFT, 0, 0));
+                headerPanel.setLayout(new BorderLayout());
                 headerPanel.setBorder(new EmptyBorder(6, 0, 3, 0));
-                JLabel headerLabel = new JLabel("Tiles" + (team != null ? (" (" + team.name + ")") : "") + ":");
+                String headerText = "Tiles" + (team != null ? (" (" + team.name + ")") : "") + ":";
+                JLabel headerLabel = new JLabel("<html><body style = 'text-align:left'>" + headerText + "</body></html>");
                 headerLabel.setFont(FontManager.getRunescapeBoldFont());
                 headerPanel.add(headerLabel);
                 contentPanel.add(headerPanel);
