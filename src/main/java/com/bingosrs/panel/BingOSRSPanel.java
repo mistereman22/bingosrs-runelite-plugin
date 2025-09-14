@@ -66,7 +66,7 @@ public class BingOSRSPanel extends PluginPanel {
         topPanel.add(refreshButton, BorderLayout.EAST);
 
         this.linkButton.setFocusable(false);
-        this.linkButton.addActionListener(e -> LinkBrowser.browse("https://bingosrs.com/bingos/" + bingoInfoManager.getBingo().id));
+        this.linkButton.addActionListener(e -> LinkBrowser.browse("https://bingosrs.com/bingo/" + bingoInfoManager.getBingo().id));
         topPanel.add(this.linkButton, BorderLayout.WEST);
 
         layoutPanel.add(topPanel);
