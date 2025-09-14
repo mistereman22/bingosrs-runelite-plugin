@@ -106,7 +106,7 @@ public class LootNotifier {
                         ImageIO.write(bufferedImage, "png", byteArrayOutputStream);
                         imageBytes = byteArrayOutputStream.toByteArray();
                         bingOSRSService.submitDropAsync(bingOSRSConfig.bingoId(), imageBytes, client.getLocalPlayer().getName(), item.getId(), finalNpcId)
-                                .whenComplete((result, throwable) -> bingoInfoManager.triggerUpdateRequiredDrops());
+                                .whenComplete((result, throwable) -> bingoInfoManager.triggerUpdateData());
                     }
                     catch (IOException e)
                     {

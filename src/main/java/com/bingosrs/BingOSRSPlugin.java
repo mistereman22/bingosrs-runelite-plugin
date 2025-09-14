@@ -2,6 +2,7 @@ package com.bingosrs;
 
 import com.bingosrs.api.BingOSRSService;
 import com.bingosrs.notifiers.LootNotifier;
+import com.bingosrs.panel.BingOSRSPanel;
 import com.google.inject.Provides;
 import javax.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
@@ -14,6 +15,10 @@ import net.runelite.client.events.*;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.plugins.loottracker.LootReceived;
+import net.runelite.client.ui.ClientToolbar;
+import net.runelite.client.ui.NavigationButton;
+import net.runelite.client.util.ImageUtil;
+
 import java.util.concurrent.atomic.AtomicReference;
 
 @Slf4j
@@ -31,10 +36,29 @@ public class BingOSRSPlugin extends Plugin
 	@Inject
 	private LootNotifier lootNotifier;
 
+	@Inject
+	private ClientToolbar clientToolbar;
+
+	private BingOSRSPanel panel;
+	private NavigationButton navButton;
+
 	private final AtomicReference<GameState> gameState = new AtomicReference<>();
 
 	@Override
 	protected void startUp() {
+		panel = injector.getInstance(BingOSRSPanel.class);
+
+		navButton = NavigationButton.builder()
+				.tooltip("BingOSRS")
+				.icon(ImageUtil.loadImageResource(getClass(), "/panel_icon.png"))
+				.priority(5)
+				.panel(panel)
+				.build();
+		clientToolbar.addNavigation(navButton);
+
+		this.bingOSRSService.triggerAuth(false);
+		this.bingoInfoManager.startUp();
+
 		log.debug("Started up BingOSRS");
 	}
 
@@ -55,9 +79,9 @@ public class BingOSRSPlugin extends Plugin
 			return;
 		}
 
-        bingOSRSService.triggerAuth();
+        bingOSRSService.triggerAuth(false);
 		if (event.getKey().equals("bingoId")) {
-			bingoInfoManager.triggerUpdateRequiredDrops();
+			bingoInfoManager.triggerUpdateData(false);
 		}
 	}
 
@@ -89,5 +113,9 @@ public class BingOSRSPlugin extends Plugin
 	@Subscribe
 	public void onLootReceived(LootReceived lootReceived) {
 		lootNotifier.onLootReceived(lootReceived);
+	}
+
+	public void updatePanel() {
+		this.panel.update();
 	}
 }

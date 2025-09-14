@@ -1,8 +1,11 @@
 package com.bingosrs;
 
 import com.bingosrs.api.BingOSRSService;
+import com.bingosrs.api.model.Bingo;
 import com.bingosrs.api.model.RequiredDrop;
 import com.bingosrs.api.model.Team;
+import com.bingosrs.panel.BingOSRSPanel;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.GameState;
@@ -28,44 +31,92 @@ public class BingoInfoManager {
     @Inject
     private BingOSRSService bingOSRSService;
 
+    @Inject
+    private BingOSRSPlugin plugin;
+
     // Default to true so this pulls on first game tick
-    private boolean shouldUpdateRequiredDrops = true;
-    private List<RequiredDrop> requiredDrops = new ArrayList<>();
+    private boolean shouldUpdateData = true;
+
+    @Getter
+    private Bingo bingo;
+    @Getter
+    private Team[] teams;
+    @Getter
+    private Team team;
+
+    public void setBingo(Bingo bingo) {
+        this.bingo = bingo;
+        this.plugin.updatePanel();
+    }
+
+    public void setTeam(Team team) {
+        this.team = team;
+        this.plugin.updatePanel();
+    }
+
+    public void setTeams(Team[] teams) {
+        this.teams = teams;
+        this.plugin.updatePanel();
+    }
+
+    public void startUp() {
+        this.updateData();
+    }
 
     public void onGameTick(GameTick gameTick) {
-        if (this.shouldUpdateRequiredDrops) {
-            this.shouldUpdateRequiredDrops = false;
-            this.updateRequiredDrops();
+        if (this.shouldUpdateData) {
+            this.shouldUpdateData = false;
+            this.updateData();
         }
     }
 
-    public void triggerUpdateRequiredDrops() {
-        shouldUpdateRequiredDrops = true;
+    public void triggerUpdateData() {
+        triggerUpdateData(true);
     }
 
-    private void updateRequiredDrops() {
+    public void triggerUpdateData(boolean lazy) {
+        if (lazy) {
+            shouldUpdateData = true;
+        } else {
+            updateData();
+        }
+    }
+
+    private void updateData() {
+        setBingo(null);
+        setTeam(null);
+        setTeams(null);
+
         if (config.bingoId().isBlank()) {
             return;
         }
+        bingOSRSService.fetchBingoAsync()
+                .thenAccept(bingo -> {
+                    setBingo(bingo);
+                })
+                .exceptionally(throwable -> {
+                    return null;
+                });
+
         bingOSRSService.fetchTeamsAsync()
                 .thenAccept(teams -> {
-                    List<RequiredDrop> requiredDrops = new ArrayList<>();
-                    boolean onTeam = false;
-                    for (Team team: teams) {
-                        if (Arrays.asList(team.players).contains(client.getLocalPlayer().getName())) {
-                            onTeam = true;
-                            for (RequiredDrop[] tileDrops: team.remainingDrops) {
-                                requiredDrops.addAll(Arrays.asList(tileDrops));
+                    setTeams(teams);
+                    if (client.getLocalPlayer() != null) {
+                        boolean onTeam = false;
+                        for (Team team: teams) {
+                            if (Arrays.asList(team.players).contains(client.getLocalPlayer().getName())) {
+                                setTeam(team);
+                                onTeam = true;
+                                break;
                             }
-                            break;
                         }
-                    }
 
-                    this.requiredDrops = requiredDrops;
-                    if (!onTeam) {
-                        log.debug("No team found for player");
-                    } else {
-                        log.debug("Required drops updated");
+                        if (!onTeam) {
+                            setTeam(null);
+                            log.debug("No team found for player");
+                        } else {
+                            log.debug("Team data updated");
+                        }
                     }
                 })
                 .exceptionally(throwable -> {
@@ -74,10 +125,16 @@ public class BingoInfoManager {
     }
 
     public boolean isRequiredDrop(Integer itemId, Integer npcId) {
-        for (RequiredDrop requiredDrop: requiredDrops) {
-            if (Objects.equals(requiredDrop.item, itemId)) {
-                if (requiredDrop.bosses.length == 0 || Arrays.asList(requiredDrop.bosses).contains(npcId)) {
-                    return true;
+        if (team == null) {
+            return false;
+        }
+
+        for (RequiredDrop[] tileDrops: this.team.remainingDrops) {
+            for (RequiredDrop requiredDrop: tileDrops) {
+                if (Objects.equals(requiredDrop.item, itemId)) {
+                    if (requiredDrop.bosses.length == 0 || Arrays.asList(requiredDrop.bosses).contains(npcId)) {
+                        return true;
+                    }
                 }
             }
         }

@@ -11,4 +11,6 @@ public class Team {
     @SerializedName("remainingDrops")
     public RequiredDrop[][] remainingDrops;
 
+    @SerializedName("drops")
+    public Drop[][] drops;
 }
