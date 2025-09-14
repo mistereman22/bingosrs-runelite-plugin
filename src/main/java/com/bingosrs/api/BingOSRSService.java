@@ -34,6 +34,7 @@ public class BingOSRSService {
     @Inject
     private OkHttpClient client;
 
+    @Inject
     private Gson gson;
 
     @Inject
@@ -52,16 +53,18 @@ public class BingOSRSService {
         this.plugin.updatePanel();
     }
 
-    public BingOSRSService() {
+    public void startUp() {
         RuntimeTypeAdapterFactory<Tile> tileAdapter = RuntimeTypeAdapterFactory
                 .of(Tile.class, "__t")
                 .registerSubtype(StandardTile.class, "StandardTile")
                 .registerSubtype(PointTile.class, "PointTile")
                 .registerSubtype(CustomTile.class, "CustomTile");
 
-        this.gson = new GsonBuilder()
+        this.gson = this.gson.newBuilder()
                 .registerTypeAdapterFactory(tileAdapter)
                 .create();
+
+        triggerAuth(false);
     }
 
     private String request(Request request) throws Exception {

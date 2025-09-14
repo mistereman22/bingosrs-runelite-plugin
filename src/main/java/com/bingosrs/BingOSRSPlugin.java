@@ -56,7 +56,7 @@ public class BingOSRSPlugin extends Plugin
 				.build();
 		clientToolbar.addNavigation(navButton);
 
-		this.bingOSRSService.triggerAuth(false);
+		this.bingOSRSService.startUp();
 		this.bingoInfoManager.startUp();
 
 		log.debug("Started up BingOSRS");
