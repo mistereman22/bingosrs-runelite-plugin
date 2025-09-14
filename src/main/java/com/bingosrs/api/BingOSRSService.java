@@ -27,7 +27,9 @@ import java.util.concurrent.CompletableFuture;
 @Slf4j
 @Singleton
 public class BingOSRSService {
-    public static final String HOST = "api.bingosrs.com";
+    private static final String SCHEME = "https";
+    private static final String HOST = "api.bingosrs.com";
+    private static final int PORT = 443;
 
     @Inject
     private OkHttpClient client;
@@ -115,7 +117,7 @@ public class BingOSRSService {
             return future;
         }
 
-        HttpUrl url = new HttpUrl.Builder().scheme("https").host(HOST)
+        HttpUrl url = new HttpUrl.Builder().scheme(SCHEME).host(HOST).port(PORT)
                 .addPathSegment("auth").addPathSegment("login").addPathSegment("player").build();
 
         AuthRequest authRequest = new AuthRequest(config.bingoId(), config.playerToken());
@@ -145,7 +147,7 @@ public class BingOSRSService {
     public CompletableFuture<Team[]> fetchTeamsAsync() {
         CompletableFuture<Team[]> future = new CompletableFuture<>();
 
-        HttpUrl url = new HttpUrl.Builder().scheme("https").host(HOST)
+        HttpUrl url = new HttpUrl.Builder().scheme(SCHEME).host(HOST).port(PORT)
                 .addPathSegment("bingo").addPathSegment(config.bingoId()).addPathSegment("teams").build();
 
         Request request = new Request.Builder().url(url).build();
@@ -171,7 +173,7 @@ public class BingOSRSService {
     public CompletableFuture<Bingo> fetchBingoAsync() {
         CompletableFuture<Bingo> future = new CompletableFuture<>();
 
-        HttpUrl url = new HttpUrl.Builder().scheme("https").host(HOST)
+        HttpUrl url = new HttpUrl.Builder().scheme(SCHEME).host(HOST).port(PORT)
                 .addPathSegment("bingo").addPathSegment(config.bingoId()).build();
 
         Request request = new Request.Builder().url(url).build();
@@ -201,7 +203,7 @@ public class BingOSRSService {
     private CompletableFuture<String> submitDropAttempt(String bingoId, byte[] screenshotBytes, String player, int itemId, int npcId, boolean isRetry) {
         CompletableFuture<String> future = new CompletableFuture<>();
 
-        HttpUrl url = new HttpUrl.Builder().scheme("https").host(HOST)
+        HttpUrl url = new HttpUrl.Builder().scheme(SCHEME).host(HOST).port(PORT)
                 .addPathSegment("bingo").addPathSegment(bingoId).addPathSegment("drop").build();
 
         RequestBody requestBody = new MultipartBody.Builder()
