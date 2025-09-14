@@ -93,35 +93,32 @@ public class BingoInfoManager {
         bingOSRSService.fetchBingoAsync()
                 .thenAccept(bingo -> {
                     setBingo(bingo);
-                })
-                .exceptionally(throwable -> {
-                    return null;
-                });
+                    if (!bingo.state.equals("Signup")) {
+                        bingOSRSService.fetchTeamsAsync()
+                                .thenAccept(teams -> {
+                                    setTeams(teams);
+                                    if (client.getLocalPlayer() != null) {
+                                        boolean onTeam = false;
+                                        for (Team team: teams) {
+                                            if (Arrays.asList(team.players).contains(client.getLocalPlayer().getName())) {
+                                                setTeam(team);
+                                                onTeam = true;
+                                                break;
+                                            }
+                                        }
 
-        bingOSRSService.fetchTeamsAsync()
-                .thenAccept(teams -> {
-                    setTeams(teams);
-                    if (client.getLocalPlayer() != null) {
-                        boolean onTeam = false;
-                        for (Team team: teams) {
-                            if (Arrays.asList(team.players).contains(client.getLocalPlayer().getName())) {
-                                setTeam(team);
-                                onTeam = true;
-                                break;
-                            }
-                        }
-
-                        if (!onTeam) {
-                            setTeam(null);
-                            log.debug("No team found for player");
-                        } else {
-                            log.debug("Team data updated");
-                        }
+                                        if (!onTeam) {
+                                            setTeam(null);
+                                            log.debug("No team found for player");
+                                        } else {
+                                            log.debug("Team data updated");
+                                        }
+                                    }
+                                })
+                                .exceptionally(throwable -> null);
                     }
                 })
-                .exceptionally(throwable -> {
-                    return null;
-                });
+                .exceptionally(throwable -> null);
     }
 
     public boolean isRequiredDrop(Integer itemId, Integer npcId) {
