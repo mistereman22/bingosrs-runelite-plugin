@@ -19,6 +19,7 @@ import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.FontManager;
 import net.runelite.client.ui.PluginPanel;
 import net.runelite.client.ui.components.PluginErrorPanel;
+import net.runelite.client.util.LinkBrowser;
 
 @Slf4j
 @Singleton
@@ -32,6 +33,8 @@ public class BingOSRSPanel extends PluginPanel {
 
     private final WarningPanel notInBingoPanel = new WarningPanel("Team not found. Check with your bingo admin that you're in the bingo and assigned to a team.");
     private final WarningPanel notAuthenticatedPanel = new WarningPanel("Error authenticating, drops will not be submitted. Double check that you entered the Player Token correctly in the config.");
+
+    private final JButton linkButton = new JButton("Open Bingo");
 
     private final JComponent contentPanel = new JPanel();
 
@@ -62,6 +65,10 @@ public class BingOSRSPanel extends PluginPanel {
         refreshButton.addActionListener(e -> bingoInfoManager.triggerUpdateData(false));
         topPanel.add(refreshButton, BorderLayout.EAST);
 
+        this.linkButton.setFocusable(false);
+        this.linkButton.addActionListener(e -> LinkBrowser.browse("https://bingosrs.com/bingos/" + bingoInfoManager.getBingo().id));
+        topPanel.add(this.linkButton, BorderLayout.WEST);
+
         layoutPanel.add(topPanel);
 
         this.contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
@@ -83,6 +90,7 @@ public class BingOSRSPanel extends PluginPanel {
         clientThread.invokeAtTickEnd(() -> {
             updateTriggered = false;
             this.contentPanel.removeAll();
+            this.linkButton.setVisible(false);
 
             Bingo bingo = bingoInfoManager.getBingo();
 
@@ -92,6 +100,7 @@ public class BingOSRSPanel extends PluginPanel {
                 Team[] teams = bingoInfoManager.getTeams();
                 Team team = bingoInfoManager.getTeam();
 
+                this.linkButton.setVisible(true);
                 contentPanel.add(new BingoSummary(bingo, teams));
 
                 if (team == null && client.getLocalPlayer() != null) {

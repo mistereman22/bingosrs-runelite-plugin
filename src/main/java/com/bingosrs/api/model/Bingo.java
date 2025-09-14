@@ -3,6 +3,9 @@ package com.bingosrs.api.model;
 import com.google.gson.annotations.SerializedName;
 
 public class Bingo {
+    @SerializedName("_id")
+    public String id;
+
     @SerializedName("name")
     public String name;
 
