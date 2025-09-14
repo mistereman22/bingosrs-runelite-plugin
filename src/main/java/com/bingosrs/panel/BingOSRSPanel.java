@@ -11,6 +11,7 @@ import javax.inject.Singleton;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 
+import com.bingosrs.api.model.tile.CustomTile;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.client.callback.ClientThread;
@@ -110,13 +111,15 @@ public class BingOSRSPanel extends PluginPanel {
                 contentPanel.add(headerPanel);
 
                 for (int tileIdx = 0; tileIdx < bingo.board.tiles.length; tileIdx++) {
-                    TileBox tileBox;
+                    boolean tileCompleted = false;
                     if (team != null) {
-                        tileBox = new TileBox(bingo.board.tiles[tileIdx], team.remainingDrops[tileIdx], client, clientThread);
-                    } else {
-                        tileBox = new TileBox(bingo.board.tiles[tileIdx], null, client, clientThread);
+                        if (bingo.board.tiles[tileIdx] instanceof CustomTile) {
+                            tileCompleted = team.drops[tileIdx].length > 0;
+                        } else {
+                            tileCompleted = team.remainingDrops[tileIdx].length == 0;
+                        }
                     }
-                    contentPanel.add(tileBox);
+                    contentPanel.add(new TileBox(bingo.board.tiles[tileIdx], tileCompleted, client));
                 }
             }
 

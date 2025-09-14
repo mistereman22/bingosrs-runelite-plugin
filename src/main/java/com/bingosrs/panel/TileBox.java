@@ -9,13 +9,13 @@ import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
 
+import com.bingosrs.api.model.Drop;
 import com.bingosrs.api.model.RequiredDrop;
 import com.bingosrs.api.model.tile.Tile;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.ItemComposition;
 import net.runelite.api.NPCComposition;
-import net.runelite.client.callback.ClientThread;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.FontManager;
 
@@ -23,7 +23,7 @@ import net.runelite.client.ui.FontManager;
 public class TileBox extends JPanel {
     private static final Color COMPLETED_COLOR = new Color(0, 50, 0);
 
-    TileBox(Tile tile, RequiredDrop[] remainingDrops, Client client, ClientThread clientThread)
+    TileBox(Tile tile, boolean isCompleted, Client client)
     {
         setLayout(new BorderLayout());
         setBorder(new CompoundBorder(new EmptyBorder(3, 0, 3, 0), new LineBorder(ColorScheme.BORDER_COLOR, 1)));
@@ -31,7 +31,7 @@ public class TileBox extends JPanel {
         JPanel innerPanel = new JPanel();
         innerPanel.setLayout(new BorderLayout());
         innerPanel.setBorder(new EmptyBorder(4, 4, 4, 4));
-        if (remainingDrops != null && remainingDrops.length == 0) {
+        if (isCompleted) {
             innerPanel.setBackground(COMPLETED_COLOR);
         }
         add(innerPanel);
