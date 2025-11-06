@@ -16,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.ItemComposition;
 import net.runelite.api.NPCComposition;
+import net.runelite.client.callback.ClientThread;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.FontManager;
 
@@ -23,7 +24,7 @@ import net.runelite.client.ui.FontManager;
 public class TileBox extends JPanel {
     private static final Color COMPLETED_COLOR = new Color(0, 50, 0);
 
-    TileBox(Tile tile, boolean isCompleted, Client client)
+    TileBox(Tile tile, boolean isCompleted, Client client, ClientThread clientThread)
     {
         setLayout(new BorderLayout());
         setBorder(new CompoundBorder(new EmptyBorder(3, 0, 3, 0), new LineBorder(ColorScheme.BORDER_COLOR, 1)));
@@ -48,26 +49,37 @@ public class TileBox extends JPanel {
         RequiredDrop[] drops = tile.getRequiredDrops();
 
         for (RequiredDrop drop : drops) {
-            ItemComposition itemComposition = client.getItemDefinition(drop.item);
-            JLabel itemLabel = new JLabel(itemComposition.getMembersName());
-            itemLabel.setFont(FontManager.getRunescapeSmallFont());
-            itemLabel.setBorder(BorderFactory.createEmptyBorder(4, 0, 0, 0));
-            content.add(itemLabel);
+            clientThread.invoke(() -> {
+                ItemComposition itemComposition = client.getItemDefinition(drop.item);
 
+                SwingUtilities.invokeLater(() -> {
+                    JLabel itemLabel = new JLabel(itemComposition.getMembersName());
+                    itemLabel.setFont(FontManager.getRunescapeSmallFont());
+                    itemLabel.setBorder(BorderFactory.createEmptyBorder(4, 0, 0, 0));
+                    content.add(itemLabel);
+                    revalidate();
+                    repaint();
+                });
+            });
             if (drop.bosses != null && drop.bosses.length > 0) {
-                StringBuilder labelText = new StringBuilder("Bosses: ");
-
-                for (int i = 0; i < drop.bosses.length; i++) {
-                    NPCComposition npcComposition = client.getNpcDefinition(drop.bosses[i]);
-                    labelText.append(npcComposition.getName());
-                    if (i < drop.bosses.length - 1) {
-                        labelText.append(", ");
+                clientThread.invoke(() -> {
+                    StringBuilder labelText = new StringBuilder("Bosses: ");
+                    for (int i = 0; i < drop.bosses.length; i++) {
+                        NPCComposition npcComposition = client.getNpcDefinition(drop.bosses[i]);
+                        labelText.append(npcComposition.getName());
+                        if (i < drop.bosses.length - 1) {
+                            labelText.append(", ");
+                        }
                     }
-                }
-                JLabel bossLabel = new JLabel(labelText.toString());
-                bossLabel.setFont(FontManager.getRunescapeSmallFont());
-                bossLabel.setBorder(new EmptyBorder(0, 8, 0, 0));
-                content.add(bossLabel);
+                    SwingUtilities.invokeLater(() -> {
+                        JLabel bossLabel = new JLabel(labelText.toString());
+                        bossLabel.setFont(FontManager.getRunescapeSmallFont());
+                        bossLabel.setBorder(new EmptyBorder(0, 8, 0, 0));
+                        content.add(bossLabel);
+                        revalidate();
+                        repaint();
+                    });
+                });
             }
         }
     }

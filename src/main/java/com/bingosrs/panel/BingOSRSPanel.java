@@ -87,53 +87,52 @@ public class BingOSRSPanel extends PluginPanel {
         }
         updateTriggered = true;
 
-        clientThread.invokeAtTickEnd(() -> {
-            updateTriggered = false;
-            this.contentPanel.removeAll();
-            this.linkButton.setVisible(false);
+        this.contentPanel.removeAll();
+        this.linkButton.setVisible(false);
 
-            Bingo bingo = bingoInfoManager.getBingo();
+        Bingo bingo = bingoInfoManager.getBingo();
 
-            if (bingo == null) {
-                contentPanel.add(noBingoDataPanel);
-            } else {
-                Team[] teams = bingoInfoManager.getTeams();
-                Team team = bingoInfoManager.getTeam();
+        if (bingo == null) {
+            contentPanel.add(noBingoDataPanel);
+        } else {
+            Team[] teams = bingoInfoManager.getTeams();
+            Team team = bingoInfoManager.getTeam();
 
-                this.linkButton.setVisible(true);
-                contentPanel.add(new BingoSummary(bingo, teams));
+            this.linkButton.setVisible(true);
+            contentPanel.add(new BingoSummary(bingo, teams));
 
-                if (team == null && client.getLocalPlayer() != null) {
-                    contentPanel.add(notInBingoPanel);
-                }
-                if (!bingOSRSService.isAuthenticated()) {
-                    contentPanel.add(notAuthenticatedPanel);
-                }
-
-                JPanel headerPanel = new JPanel();
-                headerPanel.setLayout(new BorderLayout());
-                headerPanel.setBorder(new EmptyBorder(6, 0, 3, 0));
-                String headerText = "Tiles" + (team != null ? (" (" + team.name + ")") : "") + ":";
-                JLabel headerLabel = new JLabel("<html><body style = 'text-align:left'>" + headerText + "</body></html>");
-                headerLabel.setFont(FontManager.getRunescapeBoldFont());
-                headerPanel.add(headerLabel);
-                contentPanel.add(headerPanel);
-
-                for (int tileIdx = 0; tileIdx < bingo.board.tiles.length; tileIdx++) {
-                    boolean tileCompleted = false;
-                    if (team != null) {
-                        if (bingo.board.tiles[tileIdx] instanceof CustomTile) {
-                            tileCompleted = team.drops[tileIdx].length > 0;
-                        } else {
-                            tileCompleted = team.remainingDrops[tileIdx].length == 0;
-                        }
-                    }
-                    contentPanel.add(new TileBox(bingo.board.tiles[tileIdx], tileCompleted, client));
-                }
+            if (team == null && client.getLocalPlayer() != null) {
+                contentPanel.add(notInBingoPanel);
+            }
+            if (!bingOSRSService.isAuthenticated()) {
+                contentPanel.add(notAuthenticatedPanel);
             }
 
-            revalidate();
-            repaint();
-        });
+            JPanel headerPanel = new JPanel();
+            headerPanel.setLayout(new BorderLayout());
+            headerPanel.setBorder(new EmptyBorder(6, 0, 3, 0));
+            String headerText = "Tiles" + (team != null ? (" (" + team.name + ")") : "") + ":";
+            JLabel headerLabel = new JLabel("<html><body style = 'text-align:left'>" + headerText + "</body></html>");
+            headerLabel.setFont(FontManager.getRunescapeBoldFont());
+            headerPanel.add(headerLabel);
+            contentPanel.add(headerPanel);
+
+            for (int tileIdx = 0; tileIdx < bingo.board.tiles.length; tileIdx++) {
+                boolean tileCompleted = false;
+                if (team != null) {
+                    if (bingo.board.tiles[tileIdx] instanceof CustomTile) {
+                        tileCompleted = team.drops[tileIdx].length > 0;
+                    } else {
+                        tileCompleted = team.remainingDrops[tileIdx].length == 0;
+                    }
+                }
+                contentPanel.add(new TileBox(bingo.board.tiles[tileIdx], tileCompleted, client, clientThread));
+            }
+        }
+
+        revalidate();
+        repaint();
+
+        updateTriggered = false;
     }
 }
