@@ -99,8 +99,10 @@ public class BingoInfoManager {
                                     setTeams(teams);
                                     if (client.getLocalPlayer() != null) {
                                         boolean onTeam = false;
+                                        String currentPlayerName = client.getLocalPlayer().getName();
+
                                         for (Team team: teams) {
-                                            if (Arrays.asList(team.players).contains(client.getLocalPlayer().getName())) {
+                                            if (Arrays.stream(team.players).anyMatch(playerName -> playerName.equalsIgnoreCase(currentPlayerName))) {
                                                 setTeam(team);
                                                 onTeam = true;
                                                 break;
