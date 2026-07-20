@@ -13,4 +13,9 @@ public class Team {
 
     @SerializedName("drops")
     public Drop[][] drops;
+
+    @Override
+    public String toString() {
+        return name;
+    }
 }

@@ -39,6 +39,7 @@ public class BingOSRSPanel extends PluginPanel {
     private final JComponent contentPanel = new JPanel();
     private final JPanel gridPanel = new JPanel();
     private final JPanel detailPanel = new JPanel();
+    private JComboBox<Team> teamSelector = new JComboBox<>();
 
     private Integer activeTileIndex = null;
     private boolean updateTriggered = false;
@@ -82,6 +83,16 @@ public class BingOSRSPanel extends PluginPanel {
         // Scoreboard goes into contentPanel as before
         layoutPanel.add(contentPanel);
 
+        teamSelector.setFocusable(false);
+        teamSelector.addActionListener(e -> {
+            bingoInfoManager.setSelectedTeam((Team) teamSelector.getSelectedItem());
+            update();
+        });
+        JPanel selectorWrapper = new JPanel(new BorderLayout());
+        selectorWrapper.setBorder(new EmptyBorder(6, 0, 6, 0));
+        selectorWrapper.add(teamSelector);
+        layoutPanel.add(selectorWrapper);
+
         gridPanel.setLayout(new BorderLayout());
         layoutPanel.add(gridPanel);
 
@@ -108,9 +119,18 @@ public class BingOSRSPanel extends PluginPanel {
 
         if (bingo == null) {
             contentPanel.add(noBingoDataPanel);
+            teamSelector.removeAllItems();
         } else {
             Team[] teams = bingoInfoManager.getTeams();
-            Team team = bingoInfoManager.getTeam();
+            Team team = bingoInfoManager.getSelectedTeam();
+
+            if (teamSelector.getItemCount() == 0 && teams != null) {
+                teamSelector.removeAllItems();
+                for (Team t : teams) {
+                    teamSelector.addItem(t);
+                }
+                teamSelector.setSelectedItem(bingoInfoManager.getSelectedTeam());
+            }
 
             this.linkButton.setVisible(true);
             contentPanel.add(new BingoSummary(bingo, teams));
@@ -121,8 +141,6 @@ public class BingOSRSPanel extends PluginPanel {
             if (!bingOSRSService.isAuthenticated()) {
                 contentPanel.add(notAuthenticatedPanel);
             }
-
-            // Grid View
             gridPanel.removeAll();
             gridPanel.add(new BingoBoardGrid(bingo.board.tiles, (int) Math.sqrt(bingo.board.tiles.length), activeTileIndex != null ? activeTileIndex : 0, index -> {
                 this.activeTileIndex = index;

@@ -43,6 +43,8 @@ public class BingoInfoManager {
     private Team[] teams;
     @Getter
     private Team team;
+    @Getter
+    private Team selectedTeam;
 
     public void setBingo(Bingo bingo) {
         this.bingo = bingo;
@@ -51,6 +53,11 @@ public class BingoInfoManager {
 
     public void setTeam(Team team) {
         this.team = team;
+        this.plugin.updatePanel();
+    }
+
+    public void setSelectedTeam(Team selectedTeam) {
+        this.selectedTeam = selectedTeam;
         this.plugin.updatePanel();
     }
 
@@ -85,6 +92,7 @@ public class BingoInfoManager {
     private void updateData() {
         setBingo(null);
         setTeam(null);
+        setSelectedTeam(null);
         setTeams(null);
 
         if (config.bingoId().isBlank()) {
@@ -104,6 +112,7 @@ public class BingoInfoManager {
                                         for (Team team: teams) {
                                             if (Arrays.stream(team.players).anyMatch(playerName -> playerName.equalsIgnoreCase(currentPlayerName))) {
                                                 setTeam(team);
+                                                setSelectedTeam(team);
                                                 onTeam = true;
                                                 break;
                                             }
@@ -111,6 +120,7 @@ public class BingoInfoManager {
 
                                         if (!onTeam) {
                                             setTeam(null);
+                                            setSelectedTeam(null);
                                             log.debug("No team found for player");
                                         } else {
                                             log.debug("Team data updated");
