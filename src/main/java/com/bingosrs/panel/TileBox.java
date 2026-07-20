@@ -3,14 +3,13 @@ package com.bingosrs.panel;
 import javax.inject.Inject;
 import javax.swing.*;
 import java.awt.*;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
 
-import com.bingosrs.api.model.Drop;
 import com.bingosrs.api.model.RequiredDrop;
+import com.bingosrs.api.model.tile.PointTile;
+import com.bingosrs.api.model.tile.StandardTile;
 import com.bingosrs.api.model.tile.Tile;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
@@ -30,7 +29,7 @@ public class TileBox extends JPanel {
         setBorder(new CompoundBorder(new EmptyBorder(3, 0, 3, 0), new LineBorder(ColorScheme.BORDER_COLOR, 1)));
 
         JPanel innerPanel = new JPanel();
-        innerPanel.setLayout(new BorderLayout());
+        innerPanel.setLayout(new BoxLayout(innerPanel, BoxLayout.Y_AXIS));
         innerPanel.setBorder(new EmptyBorder(4, 4, 4, 4));
         if (isCompleted) {
             innerPanel.setBackground(COMPLETED_COLOR);
@@ -39,23 +38,34 @@ public class TileBox extends JPanel {
 
         JLabel headerLabel = new JLabel(tile.description);
         headerLabel.setFont(FontManager.getRunescapeBoldFont());
-        innerPanel.add(headerLabel, BorderLayout.NORTH);
+        innerPanel.add(headerLabel);
 
-        JPanel content = new JPanel();
-        content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
-        content.setOpaque(false);
-        innerPanel.add(content, BorderLayout.CENTER);
+        if (tile instanceof PointTile) {
+            PointTile pointTile = (PointTile) tile;
+            innerPanel.add(new JLabel("Required Points: " + pointTile.getRequiredPoints()));
+            renderDrops(pointTile.getRequiredDrops(), innerPanel, client, clientThread, true);
+        } else if (tile instanceof StandardTile) {
+            StandardTile standardTile = (StandardTile) tile;
+            RequiredDrop[][] groups = standardTile.getRequiredDropGroups();
+            for (int i = 0; i < groups.length; i++) {
+                if (i > 0) innerPanel.add(new JLabel("OR"));
+                renderDrops(groups[i], innerPanel, client, clientThread, false);
+            }
+        }
+    }
 
-        RequiredDrop[] drops = tile.getRequiredDrops();
-
+    private void renderDrops(RequiredDrop[] drops, JPanel content, Client client, ClientThread clientThread, boolean showPoints) {
         for (RequiredDrop drop : drops) {
             clientThread.invoke(() -> {
                 ItemComposition itemComposition = client.getItemDefinition(drop.item);
-
+                String name = itemComposition.getMembersName();
+                if (showPoints && drop.points != null) {
+                    name += " (" + drop.points + " pts)";
+                }
+                final String labelText = name;
                 SwingUtilities.invokeLater(() -> {
-                    JLabel itemLabel = new JLabel(itemComposition.getMembersName());
+                    JLabel itemLabel = new JLabel(labelText);
                     itemLabel.setFont(FontManager.getRunescapeSmallFont());
-                    itemLabel.setBorder(BorderFactory.createEmptyBorder(4, 0, 0, 0));
                     content.add(itemLabel);
                     revalidate();
                     repaint();
@@ -67,14 +77,11 @@ public class TileBox extends JPanel {
                     for (int i = 0; i < drop.bosses.length; i++) {
                         NPCComposition npcComposition = client.getNpcDefinition(drop.bosses[i]);
                         labelText.append(npcComposition.getName());
-                        if (i < drop.bosses.length - 1) {
-                            labelText.append(", ");
-                        }
+                        if (i < drop.bosses.length - 1) labelText.append(", ");
                     }
                     SwingUtilities.invokeLater(() -> {
                         JLabel bossLabel = new JLabel(labelText.toString());
                         bossLabel.setFont(FontManager.getRunescapeSmallFont());
-                        bossLabel.setBorder(new EmptyBorder(0, 8, 0, 0));
                         content.add(bossLabel);
                         revalidate();
                         repaint();

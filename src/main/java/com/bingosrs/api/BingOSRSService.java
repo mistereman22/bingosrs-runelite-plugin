@@ -177,7 +177,7 @@ public class BingOSRSService {
         CompletableFuture<Bingo> future = new CompletableFuture<>();
 
         HttpUrl url = new HttpUrl.Builder().scheme(SCHEME).host(HOST).port(PORT)
-                .addPathSegment("bingo").addPathSegment(config.bingoId()).build();
+                .addPathSegment("v2").addPathSegment("bingo").addPathSegment(config.bingoId()).build();
 
         Request request = new Request.Builder().url(url).build();
 

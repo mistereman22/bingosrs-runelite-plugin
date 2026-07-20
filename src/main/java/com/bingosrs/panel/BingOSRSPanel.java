@@ -37,7 +37,10 @@ public class BingOSRSPanel extends PluginPanel {
     private final JButton linkButton = new JButton("Open Bingo");
 
     private final JComponent contentPanel = new JPanel();
+    private final JPanel gridPanel = new JPanel();
+    private final JPanel detailPanel = new JPanel();
 
+    private Integer activeTileIndex = null;
     private boolean updateTriggered = false;
 
     @Inject
@@ -60,20 +63,31 @@ public class BingOSRSPanel extends PluginPanel {
         topPanel.setLayout(new BorderLayout());
         topPanel.setBorder(new EmptyBorder(0, 0, 6, 0));
 
+        JPanel navPanel = new JPanel();
+        navPanel.setLayout(new BorderLayout());
+
         JButton refreshButton = new JButton("Refresh");
         refreshButton.setFocusable(false);
         refreshButton.addActionListener(e -> bingoInfoManager.triggerUpdateData(false));
-        topPanel.add(refreshButton, BorderLayout.EAST);
+        navPanel.add(refreshButton, BorderLayout.EAST);
 
         this.linkButton.setFocusable(false);
         this.linkButton.addActionListener(e -> LinkBrowser.browse("https://bingosrs.com/bingo/" + bingoInfoManager.getBingo().id));
-        topPanel.add(this.linkButton, BorderLayout.WEST);
+        navPanel.add(this.linkButton, BorderLayout.WEST);
+
+        topPanel.add(navPanel, BorderLayout.NORTH);
 
         layoutPanel.add(topPanel);
 
-        this.contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
-
+        // Scoreboard goes into contentPanel as before
         layoutPanel.add(contentPanel);
+
+        gridPanel.setLayout(new BorderLayout());
+        layoutPanel.add(gridPanel);
+
+        detailPanel.setLayout(new BoxLayout(detailPanel, BoxLayout.Y_AXIS));
+        layoutPanel.add(detailPanel);
+
 
         noBingoDataPanel.setContent("Bingo not found", "Double check that you entered the correct Bingo ID in the config.");
 
@@ -108,31 +122,43 @@ public class BingOSRSPanel extends PluginPanel {
                 contentPanel.add(notAuthenticatedPanel);
             }
 
-            JPanel headerPanel = new JPanel();
-            headerPanel.setLayout(new BorderLayout());
-            headerPanel.setBorder(new EmptyBorder(6, 0, 3, 0));
-            String headerText = "Tiles" + (team != null ? (" (" + team.name + ")") : "") + ":";
-            JLabel headerLabel = new JLabel("<html><body style = 'text-align:left'>" + headerText + "</body></html>");
-            headerLabel.setFont(FontManager.getRunescapeBoldFont());
-            headerPanel.add(headerLabel);
-            contentPanel.add(headerPanel);
+            // Grid View
+            gridPanel.removeAll();
+            gridPanel.add(new BingoBoardGrid(bingo.board.tiles, (int) Math.sqrt(bingo.board.tiles.length), activeTileIndex != null ? activeTileIndex : 0, index -> {
+                this.activeTileIndex = index;
+                update();
+            }));
 
-            for (int tileIdx = 0; tileIdx < bingo.board.tiles.length; tileIdx++) {
-                boolean tileCompleted = false;
-                if (team != null) {
-                    if (bingo.board.tiles[tileIdx] instanceof CustomTile) {
-                        tileCompleted = team.drops[tileIdx].length > 0;
-                    } else {
-                        tileCompleted = team.remainingDrops[tileIdx].length == 0;
-                    }
-                }
-                contentPanel.add(new TileBox(bingo.board.tiles[tileIdx], tileCompleted, client, clientThread));
+            // Detail View
+            if (activeTileIndex == null && bingo.board.tiles.length > 0) {
+                activeTileIndex = 0;
             }
+            updateDetailPanel(bingo, team);
+
         }
 
         revalidate();
         repaint();
 
         updateTriggered = false;
+    }
+
+    private void updateDetailPanel(Bingo bingo, Team team) {
+        detailPanel.removeAll();
+        if (activeTileIndex != null && activeTileIndex < bingo.board.tiles.length) {
+            boolean tileCompleted = false;
+            if (team != null) {
+                if (bingo.board.tiles[activeTileIndex] instanceof CustomTile) {
+                    tileCompleted = team.drops[activeTileIndex].length > 0;
+                } else if (bingo.board.tiles[activeTileIndex] instanceof com.bingosrs.api.model.tile.PointTile) {
+                    tileCompleted = team.remainingDrops[activeTileIndex].length == 0; // Or whatever your point logic is
+                } else {
+                    tileCompleted = team.remainingDrops[activeTileIndex].length == 0;
+                }
+            }
+            detailPanel.add(new TileBox(bingo.board.tiles[activeTileIndex], tileCompleted, client, clientThread));
+        }
+        detailPanel.revalidate();
+        detailPanel.repaint();
     }
 }
