@@ -129,7 +129,12 @@ public class BingOSRSPanel extends PluginPanel {
                 for (Team t : teams) {
                     teamSelector.addItem(t);
                 }
-                teamSelector.setSelectedItem(bingoInfoManager.getSelectedTeam());
+
+                if (team == null && teams.length > 0) {
+                    team = teams[0];
+                    bingoInfoManager.setSelectedTeam(team);
+                }
+                teamSelector.setSelectedItem(team);
             }
 
             this.linkButton.setVisible(true);
@@ -142,7 +147,7 @@ public class BingOSRSPanel extends PluginPanel {
                 contentPanel.add(notAuthenticatedPanel);
             }
             gridPanel.removeAll();
-            gridPanel.add(new BingoBoardGrid(bingo.board.tiles, (int) Math.sqrt(bingo.board.tiles.length), activeTileIndex != null ? activeTileIndex : 0, index -> {
+            gridPanel.add(new BingoBoardGrid(bingo.board.tiles, team, (int) Math.sqrt(bingo.board.tiles.length), activeTileIndex != null ? activeTileIndex : 0, index -> {
                 this.activeTileIndex = index;
                 update();
             }));
