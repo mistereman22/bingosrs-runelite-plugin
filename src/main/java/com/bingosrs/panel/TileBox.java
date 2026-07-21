@@ -40,12 +40,12 @@ public class TileBox extends JPanel {
             PointTile pointTile = (PointTile) tile;
             JLabel pointsLabel = new JLabel("Required Points: " + pointTile.getRequiredPoints());
             innerPanel.add(pointsLabel);
-            renderDrops(pointTile.getRequiredDrops(), innerPanel, client, clientThread, true);
+            renderDrops(pointTile.getRequiredDrops(), innerPanel, client, clientThread);
         } else if (tile instanceof StandardTile) {
             StandardTile standardTile = (StandardTile) tile;
             RequiredDrop[][] groups = standardTile.getRequiredDropGroups();
             if (groups.length == 1) {
-                renderDrops(groups[0], innerPanel, client, clientThread, false);
+                renderDrops(groups[0], innerPanel, client, clientThread);
             } else {
                 for (int i = 0; i < groups.length; i++) {
                     if (i > 0) {
@@ -66,7 +66,7 @@ public class TileBox extends JPanel {
                     JPanel dropsPanel = new JPanel();
                     dropsPanel.setLayout(new BoxLayout(dropsPanel, BoxLayout.Y_AXIS));
                     dropsPanel.setOpaque(false);
-                    renderDrops(groups[i], dropsPanel, client, clientThread, false);
+                    renderDrops(groups[i], dropsPanel, client, clientThread);
                     groupPanel.add(dropsPanel, BorderLayout.CENTER);
 
                     innerPanel.add(groupPanel);
@@ -75,20 +75,35 @@ public class TileBox extends JPanel {
         }
     }
 
-    private void renderDrops(RequiredDrop[] drops, JPanel content, Client client, ClientThread clientThread, boolean showPoints) {
+    private void renderDrops(RequiredDrop[] drops, JPanel content, Client client, ClientThread clientThread) {
         for (RequiredDrop drop : drops) {
             clientThread.invoke(() -> {
                 ItemComposition itemComposition = client.getItemDefinition(drop.item);
                 String name = itemComposition.getMembersName();
-                if (showPoints && drop.points != null) {
-                    name += " (" + drop.points + " pts)";
-                }
                 final String labelText = name;
                 SwingUtilities.invokeLater(() -> {
+                    JPanel itemRow = new JPanel(new BorderLayout());
+                    itemRow.setOpaque(false);
+                    itemRow.setAlignmentX(Component.LEFT_ALIGNMENT);
+
                     JLabel itemLabel = new JLabel(labelText);
                     itemLabel.setFont(FontManager.getRunescapeSmallFont());
-                    itemLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
-                    content.add(itemLabel);
+                    itemRow.add(itemLabel, BorderLayout.WEST);
+
+                    String rightSideText = "";
+                    if (drop.amount != null && drop.amount > 1) {
+                        rightSideText = "x" + drop.amount;
+                    } else if (drop.points != null) {
+                        rightSideText = drop.points + (drop.points == 1 ? "pt" : " pts");
+                    }
+
+                    if (!rightSideText.isEmpty()) {
+                        JLabel rightSideLabel = new JLabel(rightSideText);
+                        rightSideLabel.setFont(FontManager.getRunescapeSmallFont());
+                        itemRow.add(rightSideLabel, BorderLayout.EAST);
+                    }
+
+                    content.add(itemRow);
                     revalidate();
                     repaint();
                 });

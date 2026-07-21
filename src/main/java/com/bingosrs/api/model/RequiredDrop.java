@@ -11,4 +11,7 @@ public class RequiredDrop {
 
     @SerializedName("points")
     public Integer points;
+
+    @SerializedName("amount")
+    public Integer amount;
 }
