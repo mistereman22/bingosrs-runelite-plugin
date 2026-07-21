@@ -12,11 +12,12 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 
 import com.bingosrs.api.model.tile.CustomTile;
+import com.bingosrs.api.model.tile.PointTile;
+import com.bingosrs.api.model.tile.Tile;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.ui.ColorScheme;
-import net.runelite.client.ui.FontManager;
 import net.runelite.client.ui.PluginPanel;
 import net.runelite.client.ui.components.PluginErrorPanel;
 import net.runelite.client.util.LinkBrowser;
@@ -40,6 +41,7 @@ public class BingOSRSPanel extends PluginPanel {
     private final JPanel gridPanel = new JPanel();
     private final JPanel detailPanel = new JPanel();
     private JComboBox<Team> teamSelector = new JComboBox<>();
+    private final JPanel selectorWrapper = new JPanel(new BorderLayout());
 
     private Integer activeTileIndex = null;
     private boolean updateTriggered = false;
@@ -80,7 +82,7 @@ public class BingOSRSPanel extends PluginPanel {
 
         layoutPanel.add(topPanel);
 
-        // Scoreboard goes into contentPanel as before
+        contentPanel.setLayout(new BorderLayout());
         layoutPanel.add(contentPanel);
 
         teamSelector.setFocusable(false);
@@ -88,7 +90,6 @@ public class BingOSRSPanel extends PluginPanel {
             bingoInfoManager.setSelectedTeam((Team) teamSelector.getSelectedItem());
             update();
         });
-        JPanel selectorWrapper = new JPanel(new BorderLayout());
         selectorWrapper.setBorder(new EmptyBorder(6, 0, 6, 0));
         selectorWrapper.add(teamSelector);
         layoutPanel.add(selectorWrapper);
@@ -120,39 +121,49 @@ public class BingOSRSPanel extends PluginPanel {
         if (bingo == null) {
             contentPanel.add(noBingoDataPanel);
             teamSelector.removeAllItems();
+            selectorWrapper.setVisible(false);
         } else {
             Team[] teams = bingoInfoManager.getTeams();
             Team team = bingoInfoManager.getSelectedTeam();
 
-            if (teamSelector.getItemCount() == 0 && teams != null) {
-                teamSelector.removeAllItems();
-                for (Team t : teams) {
-                    teamSelector.addItem(t);
-                }
+            if (teams != null && teams.length > 0) {
+                selectorWrapper.setVisible(true);
+                if (teamSelector.getItemCount() == 0) {
+                    teamSelector.removeAllItems();
+                    for (Team t : teams) {
+                        teamSelector.addItem(t);
+                    }
 
-                if (team == null && teams.length > 0) {
-                    team = teams[0];
-                    bingoInfoManager.setSelectedTeam(team);
+                    if (team == null && teams.length > 0) {
+                        team = teams[0];
+                        bingoInfoManager.setSelectedTeam(team);
+                    }
+                    teamSelector.setSelectedItem(team);
                 }
-                teamSelector.setSelectedItem(team);
+            } else {
+                selectorWrapper.setVisible(false);
             }
 
             this.linkButton.setVisible(true);
-            contentPanel.add(new BingoSummary(bingo, teams));
+            contentPanel.add(new BingoSummary(bingo, teams), BorderLayout.CENTER);
+
+            JPanel notificationPanel = new JPanel();
+            notificationPanel.setLayout(new BoxLayout(notificationPanel, BoxLayout.Y_AXIS));
 
             if (team == null && client.getLocalPlayer() != null) {
-                contentPanel.add(notInBingoPanel);
+                notificationPanel.add(notInBingoPanel);
             }
             if (!bingOSRSService.isAuthenticated()) {
-                contentPanel.add(notAuthenticatedPanel);
+                notificationPanel.add(notAuthenticatedPanel);
             }
+            contentPanel.add(notificationPanel, BorderLayout.SOUTH);
+
             gridPanel.removeAll();
             gridPanel.add(new BingoBoardGrid(bingo.board.tiles, team, (int) Math.sqrt(bingo.board.tiles.length), activeTileIndex != null ? activeTileIndex : 0, index -> {
                 this.activeTileIndex = index;
                 update();
             }));
 
-            // Detail View
             if (activeTileIndex == null && bingo.board.tiles.length > 0) {
                 activeTileIndex = 0;
             }
@@ -171,13 +182,8 @@ public class BingOSRSPanel extends PluginPanel {
         if (activeTileIndex != null && activeTileIndex < bingo.board.tiles.length) {
             boolean tileCompleted = false;
             if (team != null) {
-                if (bingo.board.tiles[activeTileIndex] instanceof CustomTile) {
-                    tileCompleted = team.drops[activeTileIndex].length > 0;
-                } else if (bingo.board.tiles[activeTileIndex] instanceof com.bingosrs.api.model.tile.PointTile) {
-                    tileCompleted = team.remainingDrops[activeTileIndex].length == 0; // Or whatever your point logic is
-                } else {
-                    tileCompleted = team.remainingDrops[activeTileIndex].length == 0;
-                }
+                Tile activeTile = bingo.board.tiles[activeTileIndex];
+                tileCompleted = team.isTileComplete(activeTile, activeTileIndex);
             }
             detailPanel.add(new TileBox(bingo.board.tiles[activeTileIndex], tileCompleted, client, clientThread));
         }

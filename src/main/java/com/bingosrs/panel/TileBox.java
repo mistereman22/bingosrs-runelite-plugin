@@ -21,7 +21,6 @@ import net.runelite.client.ui.FontManager;
 
 @Slf4j
 public class TileBox extends JPanel {
-    private static final Color COMPLETED_COLOR = new Color(0, 50, 0);
 
     TileBox(Tile tile, boolean isCompleted, Client client, ClientThread clientThread)
     {
@@ -31,9 +30,6 @@ public class TileBox extends JPanel {
         JPanel innerPanel = new JPanel();
         innerPanel.setLayout(new BoxLayout(innerPanel, BoxLayout.Y_AXIS));
         innerPanel.setBorder(new EmptyBorder(4, 4, 4, 4));
-        if (isCompleted) {
-            innerPanel.setBackground(COMPLETED_COLOR);
-        }
         add(innerPanel);
 
         JLabel headerLabel = new JLabel(tile.description);
@@ -42,14 +38,39 @@ public class TileBox extends JPanel {
 
         if (tile instanceof PointTile) {
             PointTile pointTile = (PointTile) tile;
-            innerPanel.add(new JLabel("Required Points: " + pointTile.getRequiredPoints()));
+            JLabel pointsLabel = new JLabel("Required Points: " + pointTile.getRequiredPoints());
+            innerPanel.add(pointsLabel);
             renderDrops(pointTile.getRequiredDrops(), innerPanel, client, clientThread, true);
         } else if (tile instanceof StandardTile) {
             StandardTile standardTile = (StandardTile) tile;
             RequiredDrop[][] groups = standardTile.getRequiredDropGroups();
-            for (int i = 0; i < groups.length; i++) {
-                if (i > 0) innerPanel.add(new JLabel("OR"));
-                renderDrops(groups[i], innerPanel, client, clientThread, false);
+            if (groups.length == 1) {
+                renderDrops(groups[0], innerPanel, client, clientThread, false);
+            } else {
+                for (int i = 0; i < groups.length; i++) {
+                    if (i > 0) {
+                        JPanel orWrapper = new JPanel();
+                        orWrapper.setOpaque(false);
+                        orWrapper.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+                        JLabel orLabel = new JLabel("OR");
+                        orWrapper.add(orLabel);
+                        innerPanel.add(orWrapper);
+                    }
+                    JPanel groupPanel = new JPanel(new BorderLayout());
+                    groupPanel.setBorder(new CompoundBorder(
+                        new LineBorder(ColorScheme.DARKER_GRAY_COLOR, 1), new EmptyBorder(4, 4, 4, 4)
+                    ));
+                    groupPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+                    JPanel dropsPanel = new JPanel();
+                    dropsPanel.setLayout(new BoxLayout(dropsPanel, BoxLayout.Y_AXIS));
+                    dropsPanel.setOpaque(false);
+                    renderDrops(groups[i], dropsPanel, client, clientThread, false);
+                    groupPanel.add(dropsPanel, BorderLayout.CENTER);
+
+                    innerPanel.add(groupPanel);
+                }
             }
         }
     }
@@ -66,6 +87,7 @@ public class TileBox extends JPanel {
                 SwingUtilities.invokeLater(() -> {
                     JLabel itemLabel = new JLabel(labelText);
                     itemLabel.setFont(FontManager.getRunescapeSmallFont());
+                    itemLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
                     content.add(itemLabel);
                     revalidate();
                     repaint();
@@ -82,6 +104,7 @@ public class TileBox extends JPanel {
                     SwingUtilities.invokeLater(() -> {
                         JLabel bossLabel = new JLabel(labelText.toString());
                         bossLabel.setFont(FontManager.getRunescapeSmallFont());
+                        bossLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
                         content.add(bossLabel);
                         revalidate();
                         repaint();
