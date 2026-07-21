@@ -32,7 +32,7 @@ public class TileBox extends JPanel {
         innerPanel.setBorder(new EmptyBorder(4, 4, 4, 4));
         add(innerPanel);
 
-        JLabel headerLabel = new JLabel(tile.description);
+        JLabel headerLabel = new JLabel("<html><body style='width: 100%;'>" + tile.description + "</body></html>");
         headerLabel.setFont(FontManager.getRunescapeBoldFont());
         innerPanel.add(headerLabel);
 
