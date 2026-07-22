@@ -8,4 +8,10 @@ public class RequiredDrop {
 
     @SerializedName("bosses")
     public Integer[] bosses;
+
+    @SerializedName("points")
+    public Integer points;
+
+    @SerializedName("amount")
+    public Integer amount;
 }

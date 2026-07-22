@@ -12,11 +12,12 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 
 import com.bingosrs.api.model.tile.CustomTile;
+import com.bingosrs.api.model.tile.PointTile;
+import com.bingosrs.api.model.tile.Tile;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.ui.ColorScheme;
-import net.runelite.client.ui.FontManager;
 import net.runelite.client.ui.PluginPanel;
 import net.runelite.client.ui.components.PluginErrorPanel;
 import net.runelite.client.util.LinkBrowser;
@@ -37,7 +38,12 @@ public class BingOSRSPanel extends PluginPanel {
     private final JButton linkButton = new JButton("Open Bingo");
 
     private final JComponent contentPanel = new JPanel();
+    private final JPanel gridPanel = new JPanel();
+    private final JPanel detailPanel = new JPanel();
+    private JComboBox<Team> teamSelector = new JComboBox<>();
+    private final JPanel selectorWrapper = new JPanel(new BorderLayout());
 
+    private Integer activeTileIndex = null;
     private boolean updateTriggered = false;
 
     @Inject
@@ -60,28 +66,47 @@ public class BingOSRSPanel extends PluginPanel {
         topPanel.setLayout(new BorderLayout());
         topPanel.setBorder(new EmptyBorder(0, 0, 6, 0));
 
+        JPanel navPanel = new JPanel();
+        navPanel.setLayout(new BorderLayout());
+
         JButton refreshButton = new JButton("Refresh");
         refreshButton.setFocusable(false);
         refreshButton.addActionListener(e -> bingoInfoManager.triggerUpdateData(false));
-        topPanel.add(refreshButton, BorderLayout.EAST);
+        navPanel.add(refreshButton, BorderLayout.EAST);
 
         this.linkButton.setFocusable(false);
         this.linkButton.addActionListener(e -> LinkBrowser.browse("https://bingosrs.com/bingo/" + bingoInfoManager.getBingo().id));
-        topPanel.add(this.linkButton, BorderLayout.WEST);
+        navPanel.add(this.linkButton, BorderLayout.WEST);
+
+        topPanel.add(navPanel, BorderLayout.NORTH);
 
         layoutPanel.add(topPanel);
 
-        this.contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
-
+        contentPanel.setLayout(new BorderLayout());
         layoutPanel.add(contentPanel);
+
+        teamSelector.setFocusable(false);
+        teamSelector.addActionListener(e -> {
+            bingoInfoManager.setSelectedTeam((Team) teamSelector.getSelectedItem());
+            update();
+        });
+        selectorWrapper.setBorder(new EmptyBorder(6, 0, 6, 0));
+        selectorWrapper.add(teamSelector);
+        layoutPanel.add(selectorWrapper);
+
+        gridPanel.setLayout(new BorderLayout());
+        layoutPanel.add(gridPanel);
+
+        detailPanel.setLayout(new BoxLayout(detailPanel, BoxLayout.Y_AXIS));
+        layoutPanel.add(detailPanel);
+
 
         noBingoDataPanel.setContent("Bingo not found", "Double check that you entered the correct Bingo ID in the config.");
 
         update();
     }
 
-    public synchronized void update()
-    {
+    public synchronized void update() {
         if (updateTriggered) {
             return;
         }
@@ -91,48 +116,85 @@ public class BingOSRSPanel extends PluginPanel {
         this.linkButton.setVisible(false);
 
         Bingo bingo = bingoInfoManager.getBingo();
-
         if (bingo == null) {
             contentPanel.add(noBingoDataPanel);
+            teamSelector.removeAllItems();
+            selectorWrapper.setVisible(false);
         } else {
             Team[] teams = bingoInfoManager.getTeams();
-            Team team = bingoInfoManager.getTeam();
+            Team team = bingoInfoManager.getSelectedTeam();
 
-            this.linkButton.setVisible(true);
-            contentPanel.add(new BingoSummary(bingo, teams));
+            if (teams != null && teams.length > 0) {
+                if (team == null) {
+                    team = teams[0];
+                    bingoInfoManager.setSelectedTeam(team);
+                }
 
-            if (team == null && client.getLocalPlayer() != null) {
-                contentPanel.add(notInBingoPanel);
-            }
-            if (!bingOSRSService.isAuthenticated()) {
-                contentPanel.add(notAuthenticatedPanel);
-            }
+                selectorWrapper.setVisible(true);
 
-            JPanel headerPanel = new JPanel();
-            headerPanel.setLayout(new BorderLayout());
-            headerPanel.setBorder(new EmptyBorder(6, 0, 3, 0));
-            String headerText = "Tiles" + (team != null ? (" (" + team.name + ")") : "") + ":";
-            JLabel headerLabel = new JLabel("<html><body style = 'text-align:left'>" + headerText + "</body></html>");
-            headerLabel.setFont(FontManager.getRunescapeBoldFont());
-            headerPanel.add(headerLabel);
-            contentPanel.add(headerPanel);
-
-            for (int tileIdx = 0; tileIdx < bingo.board.tiles.length; tileIdx++) {
-                boolean tileCompleted = false;
-                if (team != null) {
-                    if (bingo.board.tiles[tileIdx] instanceof CustomTile) {
-                        tileCompleted = team.drops[tileIdx].length > 0;
-                    } else {
-                        tileCompleted = team.remainingDrops[tileIdx].length == 0;
+                if (teamSelector.getItemCount() != teams.length) {
+                    teamSelector.removeAllItems();
+                    for (Team t : teams) {
+                        teamSelector.addItem(t);
                     }
                 }
-                contentPanel.add(new TileBox(bingo.board.tiles[tileIdx], tileCompleted, client, clientThread));
+
+                if (teamSelector.getSelectedItem() != team) {
+                    teamSelector.setSelectedItem(team);
+                }
+            } else {
+                selectorWrapper.setVisible(false);
             }
+
+            this.linkButton.setVisible(true);
+            contentPanel.add(new BingoSummary(bingo, teams), BorderLayout.CENTER);
+
+            JPanel notificationPanel = new JPanel();
+            notificationPanel.setLayout(new BoxLayout(notificationPanel, BoxLayout.Y_AXIS));
+
+            if (team == null && client.getLocalPlayer() != null) {
+                notificationPanel.add(notInBingoPanel);
+            }
+            if (!bingOSRSService.isAuthenticated()) {
+                notificationPanel.add(notAuthenticatedPanel);
+            }
+            contentPanel.add(notificationPanel, BorderLayout.SOUTH);
+
+            gridPanel.removeAll();
+            gridPanel.add(new BingoBoardGrid(
+                    bingo.board.tiles,
+                    team,
+                    (int) Math.sqrt(bingo.board.tiles.length),
+                    activeTileIndex != null ? activeTileIndex : 0,
+                    index -> {
+                        this.activeTileIndex = index;
+                        update();
+                    }
+            ));
+
+            if (activeTileIndex == null && bingo.board.tiles.length > 0) {
+                activeTileIndex = 0;
+            }
+
+            updateDetailPanel(bingo, team);
         }
 
         revalidate();
         repaint();
-
         updateTriggered = false;
+    }
+
+    private void updateDetailPanel(Bingo bingo, Team team) {
+        detailPanel.removeAll();
+        if (activeTileIndex != null && activeTileIndex < bingo.board.tiles.length) {
+            boolean tileCompleted = false;
+            if (team != null) {
+                Tile activeTile = bingo.board.tiles[activeTileIndex];
+                tileCompleted = team.isTileComplete(activeTile, activeTileIndex);
+            }
+            detailPanel.add(new TileBox(bingo.board.tiles[activeTileIndex], tileCompleted, client, clientThread));
+        }
+        detailPanel.revalidate();
+        detailPanel.repaint();
     }
 }

@@ -177,7 +177,7 @@ public class BingOSRSService {
         CompletableFuture<Bingo> future = new CompletableFuture<>();
 
         HttpUrl url = new HttpUrl.Builder().scheme(SCHEME).host(HOST).port(PORT)
-                .addPathSegment("bingo").addPathSegment(config.bingoId()).build();
+                .addPathSegment("v2").addPathSegment("bingo").addPathSegment(config.bingoId()).build();
 
         Request request = new Request.Builder().url(url).build();
 
@@ -203,18 +203,23 @@ public class BingOSRSService {
         return submitDropAttempt(bingoId, screenshotBytes, player, itemId, npcId, false); // initial attempt
     }
 
-    private CompletableFuture<String> submitDropAttempt(String bingoId, byte[] screenshotBytes, String player, int itemId, int npcId, boolean isRetry) {
+    private CompletableFuture<String> submitDropAttempt(String bingoId, byte[] screenshotBytes, String player, int itemId, Integer npcId, boolean isRetry) {
         CompletableFuture<String> future = new CompletableFuture<>();
 
         HttpUrl url = new HttpUrl.Builder().scheme(SCHEME).host(HOST).port(PORT)
                 .addPathSegment("bingo").addPathSegment(bingoId).addPathSegment("drop").build();
 
-        RequestBody requestBody = new MultipartBody.Builder()
+        MultipartBody.Builder bodyBuilder = new MultipartBody.Builder()
                 .setType(MultipartBody.FORM)
                 .addFormDataPart("__t", "Standard")
                 .addFormDataPart("player", player)
-                .addFormDataPart("boss", Integer.toString(npcId))
-                .addFormDataPart("item", Integer.toString(itemId))
+                .addFormDataPart("item", Integer.toString(itemId));
+
+        if (npcId != null) {
+            bodyBuilder.addFormDataPart("boss", Integer.toString(npcId));
+        }
+
+        RequestBody requestBody = bodyBuilder
                 .addFormDataPart("screenshot", "screenshot.png",
                         RequestBody.create(MediaType.parse("image/png"), screenshotBytes))
                 .build();

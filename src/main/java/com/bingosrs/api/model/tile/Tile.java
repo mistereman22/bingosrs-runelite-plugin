@@ -1,6 +1,8 @@
 package com.bingosrs.api.model.tile;
 
+import com.bingosrs.api.model.Drop;
 import com.bingosrs.api.model.RequiredDrop;
+import com.bingosrs.api.model.Team;
 import com.google.gson.annotations.SerializedName;
 
 public abstract class Tile {
@@ -10,6 +12,5 @@ public abstract class Tile {
     @SerializedName("description")
     public String description;
 
-
-    public abstract RequiredDrop[] getRequiredDrops();
+    public abstract boolean isCompleted(RequiredDrop[] remainingDrops, Drop[] drops);
 }
