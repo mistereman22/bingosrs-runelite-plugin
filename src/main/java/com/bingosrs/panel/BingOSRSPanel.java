@@ -106,8 +106,7 @@ public class BingOSRSPanel extends PluginPanel {
         update();
     }
 
-    public synchronized void update()
-    {
+    public synchronized void update() {
         if (updateTriggered) {
             return;
         }
@@ -117,7 +116,6 @@ public class BingOSRSPanel extends PluginPanel {
         this.linkButton.setVisible(false);
 
         Bingo bingo = bingoInfoManager.getBingo();
-
         if (bingo == null) {
             contentPanel.add(noBingoDataPanel);
             teamSelector.removeAllItems();
@@ -127,17 +125,21 @@ public class BingOSRSPanel extends PluginPanel {
             Team team = bingoInfoManager.getSelectedTeam();
 
             if (teams != null && teams.length > 0) {
+                if (team == null) {
+                    team = teams[0];
+                    bingoInfoManager.setSelectedTeam(team);
+                }
+
                 selectorWrapper.setVisible(true);
-                if (teamSelector.getItemCount() == 0) {
+
+                if (teamSelector.getItemCount() != teams.length) {
                     teamSelector.removeAllItems();
                     for (Team t : teams) {
                         teamSelector.addItem(t);
                     }
+                }
 
-                    if (team == null && teams.length > 0) {
-                        team = teams[0];
-                        bingoInfoManager.setSelectedTeam(team);
-                    }
+                if (teamSelector.getSelectedItem() != team) {
                     teamSelector.setSelectedItem(team);
                 }
             } else {
@@ -159,21 +161,26 @@ public class BingOSRSPanel extends PluginPanel {
             contentPanel.add(notificationPanel, BorderLayout.SOUTH);
 
             gridPanel.removeAll();
-            gridPanel.add(new BingoBoardGrid(bingo.board.tiles, team, (int) Math.sqrt(bingo.board.tiles.length), activeTileIndex != null ? activeTileIndex : 0, index -> {
-                this.activeTileIndex = index;
-                update();
-            }));
+            gridPanel.add(new BingoBoardGrid(
+                    bingo.board.tiles,
+                    team,
+                    (int) Math.sqrt(bingo.board.tiles.length),
+                    activeTileIndex != null ? activeTileIndex : 0,
+                    index -> {
+                        this.activeTileIndex = index;
+                        update();
+                    }
+            ));
 
             if (activeTileIndex == null && bingo.board.tiles.length > 0) {
                 activeTileIndex = 0;
             }
-            updateDetailPanel(bingo, team);
 
+            updateDetailPanel(bingo, team);
         }
 
         revalidate();
         repaint();
-
         updateTriggered = false;
     }
 
